@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>Roblox プロフィールビューワー（最近のアクティビティ追加）</title>
+  <style>
+    /* ベースリセット＆フォント */
+    html, body {
+      margin: 0; padding: 0;
+      height: 100%;
+      overflow-y: auto;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #fff; /* 紫グラデ消去して白背景 */
+      color: #333;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 40px auto;
+      background: #fff;
+      border-radius: 16px;
+      padding: 30px 40px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      position: relative;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 1.2em;
+      color: #4b3a81;
+      font-weight: 700;
+      letter-spacing: 2px;
+    }
+
+    /* 戻るボタン */
+    #backButton {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: #4b3a81;
+      border: none;
+      color: white;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+      display: none;
+      transition: background-color 0.3s;
+      user-select: none;
+    }
+    #backButton:hover {
+      background: #6654b3;
+    }
+
+    .search-area {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 30px;
+    }
+    input, button {
+      font-size: 16px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+    input {
+      width: 280px;
+      margin-right: 12px;
+    }
+    input:focus {
+      border-color: #4b3a81;
+      box-shadow: 0 0 6px #a19ee6;
+    }
+    button {
+      background: #4b3a81;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      min-width: 90px;
+      box-shadow: 0 4px 8px rgba(75,58,129,0.4);
+    }
+    button:hover {
+      background: #6654b3;
+    }
+
+    #result {
+      margin-top: 10px;
+    }
+
+    /* プロフィールカード */
+    .profile-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 30px;
+      background: #f7f7ff;
+      border-radius: 16px;
+      padding: 25px 30px;
+      box-shadow: inset 0 0 10px #d1d1f0;
+      position: relative;
+    }
+    .profile-card img.avatar {
+      width: 160px;
+      height: 160px;
+      border-radius: 20px;
+      border: 3px solid #4b3a81;
+      box-shadow: 0 5px 12px rgba(75,58,129,0.4);
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+    .profile-info {
+      flex: 1;
+    }
+    .profile-info h2 {
+      margin-top: 0;
+      margin-bottom: 8px;
+      color: #3b2e6d;
+      font-weight: 700;
+      font-size: 28px;
+    }
+    .profile-info p {
+      margin: 6px 0;
+      font-size: 16px;
+      color: #555;
+    }
+    .profile-info a {
+      color: #4b3a81;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-block;
+      margin-top: 10px;
+    }
+    .profile-info a:hover {
+      text-decoration: underline;
+    }
+
+    /* フレンドリスト */
+    h3 {
+      margin-top: 40px;
+      margin-bottom: 15px;
+      color: #4b3a81;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+    }
+    .friend-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill,minmax(150px,1fr));
+      gap: 14px;
+      max-height: 350px;
+      overflow-y: auto;
+      background: #f7f7ff;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: inset 0 0 10px #d1d1f0;
+    }
+    .friend-item {
+      background: white;
+      border-radius: 12px;
+      padding: 12px 15px;
+      box-shadow: 0 4px 10px rgba(75,58,129,0.12);
+      cursor: pointer;
+      transition: box-shadow 0.3s;
+      user-select: none;
+      font-weight: 600;
+      color: #4b3a81;
+      text-align: center;
+      border: 2px solid transparent;
+    }
+    .friend-item:hover {
+      box-shadow: 0 8px 16px rgba(75,58,129,0.25);
+      border-color: #6654b3;
+      color: #6654b3;
+    }
+
+    /* 最近のアクティビティ */
+    .activity-list {
+      margin-top: 30px;
+      background: #f7f7ff;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: inset 0 0 10px #d1d1f0;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+    .activity-item {
+      padding: 10px 15px;
+      border-radius: 12px;
+      background: white;
+      margin-bottom: 12px;
+      box-shadow: 0 3px 8px rgba(75,58,129,0.15);
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      cursor: default;
+    }
+    .activity-thumb {
+      width: 64px;
+      height: 64px;
+      border-radius: 12px;
+      object-fit: cover;
+      border: 2px solid #4b3a81;
+    }
+    .activity-info {
+      flex: 1;
+    }
+    .activity-info h4 {
+      margin: 0 0 6px 0;
+      color: #4b3a81;
+      font-weight: 700;
+      font-size: 18px;
+    }
+    .activity-info p {
+      margin: 0;
+      font-size: 14px;
+      color: #555;
+    }
+
+    .error {
+      color: #ff4c4c;
+      font-weight: 600;
+      text-align: center;
+      margin-top: 30px;
+    }
+
+    /* レスポンシブ */
+    @media(max-width:600px) {
+      .profile-card {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+      .profile-info h2 {
+        font-size: 24px;
+      }
+      .profile-info p {
+        font-size: 14px;
+      }
+      input {
+        width: 70vw;
+        margin-right: 8px;
+      }
+      .activity-item {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .activity-thumb {
+        margin-bottom: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <button id="backButton" title="1つ前のユーザーに戻る">← 戻る</button>
+
+    <h1>Roblox プロフィールビューワー</h1>
+    <div class="search-area">
+      <input type="text" id="usernameInput" placeholder="例: builderman" />
+      <button id="searchBtn">検索</button>
+    </div>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    const backButton = document.getElementById('backButton');
+    const searchBtn = document.getElementById('searchBtn');
+    const input = document.getElementById('usernameInput');
+    const resultDiv = document.getElementById('result');
+
+    // 履歴スタック（ユーザー名）
+    const historyStack = [];
+
+    backButton.addEventListener('click', () => {
+      if(historyStack.length > 1){
+        historyStack.pop();
+        const prevUser = historyStack[historyStack.length - 1];
+        searchProfile(prevUser, false);
+      }
+      updateBackButton();
+    });
+
+    function updateBackButton(){
+      backButton.style.display = historyStack.length > 1 ? 'block' : 'none';
+    }
+
+    async function searchProfile(username, pushHistory = true){
+      if(!username){
+        resultDiv.innerHTML = '<p class="error">ユーザー名を入力してください。</p>';
+        return;
+      }
+
+      if(pushHistory){
+        if(historyStack[historyStack.length - 1] !== username){
+          historyStack.push(username);
+        }
+      }
+
+      updateBackButton();
+      input.value = username;
+      resultDiv.innerHTML = '<p>読み込み中…</p>';
+
+      try {
+        // ユーザー名→ID
+        const idRes = await fetch('https://users.roblox.com/v1/usernames/users', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({usernames:[username], excludeBannedUsers:false})
+        });
+        const idData = await idRes.json();
+        if(!idData.data || idData.data.length === 0) throw new Error('ユーザーが見つかりません');
+
+        const user = idData.data[0];
+        const userId = user.id;
+
+        // プロフィール取得
+        const profileRes = await fetch(`https://users.roblox.com/v1/users/${userId}`);
+        const profile = await profileRes.json();
+
+        // アバター画像
+        const avatarUrl = `https://thumbnails.roblox.com/v1/users/avatar?userIds=${userId}&size=420x420&format=Png&isCircular=false`;
+        const avatarRes = await fetch(avatarUrl);
+        const avatarData = await avatarRes.json();
+        const avatarImg = avatarData.data[0]?.imageUrl || '';
+
+        // フレンド全取得（ページング対応、最大100人）
+        let allFriends = [];
+        let cursor = null;
+        const MAX_FRIENDS = 100;
+        do {
+          const url = cursor
+            ? `https://friends.roblox.com/v1/users/${userId}/friends?limit=100&cursor=${cursor}`
+            : `https://friends.roblox.com/v1/users/${userId}/friends?limit=100`;
+
+          const friendsRes = await fetch(url);
+          const friendsData = await friendsRes.json();
+
+          if(!friendsData.data) break;
+
+          allFriends = allFriends.concat(friendsData.data);
+          cursor = friendsData.nextPageCursor;
+
+          if(allFriends.length >= MAX_FRIENDS){
+            allFriends = allFriends.slice(0, MAX_FRIENDS);
+            break;
+          }
+        } while(cursor);
+
+        // フォロワー数
+        const followersRes = await fetch(`https://friends.roblox.com/v1/users/${userId}/followers/count`);
+        const followersCount = (await followersRes.json()).count || 0;
+
+        // 最近のアクティビティ取得（参加したゲーム履歴）
+        // https://api.roblox.com/users/{userId}/recent-games は非推奨なので新APIを使用
+        // 現状、公式APIでの最近遊んだゲーム取得は制限あり
+        // Robloxの非公式API利用例として以下を試す
+        let recentActivities = [];
+        try {
+          const activityRes = await fetch(`https://games.roblox.com/v1/users/${userId}/presence/places?sortOrder=Desc&limit=10`);
+          if(activityRes.ok){
+            const activityData = await activityRes.json();
+            recentActivities = activityData.data || [];
+          }
+        } catch(e) {
+          // 失敗は無視
+        }
+
+        // HTML組み立て
+        let html = `
+          <div class="profile-card">
+            <img src="${avatarImg}" alt="avatar" class="avatar" />
+            <div class="profile-info">
+              <h2>${profile.displayName} (@${profile.name})</h2>
+              <p><strong>説明:</strong> ${profile.description || '（なし）'}</p>
+              <p><strong>作成日:</strong> ${new Date(profile.created).toLocaleDateString()}</p>
+              <p><strong>ユーザーID:</strong> ${profile.id}</p>
+              <p><strong>認証バッジ:</strong> ${profile.hasVerifiedBadge ? '✅ あり' : '❌ なし'}</p>
+              <p><strong>フォロワー数:</strong> ${followersCount}</p>
+              <p><a href="https://www.roblox.com/users/${profile.id}/profile" target="_blank">Robloxでプロフィールを見る</a></p>
+            </div>
+          </div>
+        `;
+
+        // フレンドリスト
+        if(allFriends.length > 0){
+          html += `<h3>フレンドリスト（最大${MAX_FRIENDS}人）</h3>`;
+          html += `<div class="friend-list">`;
+          for(const friend of allFriends){
+            html += `<div class="friend-item" data-username="${friend.name}" title="クリックでプロフィールを見る">${friend.displayName} (@${friend.name})</div>`;
+          }
+          html += `</div>`;
+        } else {
+          html += `<h3>フレンドリスト</h3><p>フレンドがいないか非公開です。</p>`;
+        }
+
+        // 最近のアクティビティ表示
+        if(recentActivities.length > 0){
+          html += `<h3>最近のアクティビティ（参加したゲーム）</h3>`;
+          html += `<div class="activity-list">`;
+          for(const activity of recentActivities){
+            // サムネURL取得
+            let thumbUrl = '';
+            if(activity.universeId){
+              thumbUrl = `https://thumbnails.roblox.com/v1/games/gameicons?universeIds=${activity.universeId}&size=64x64&format=Png&isCircular=false`;
+            }
+            // 画像は非同期APIなので固定URLでいったん代用
+            html += `
+              <div class="activity-item">
+                <img src="${thumbUrl || 'https://via.placeholder.com/64?text=No+Img'}" alt="game icon" class="activity-thumb" />
+                <div class="activity-info">
+                  <h4>${activity.name || '不明なゲーム'}</h4>
+                  <p>プレイヤー数: ${activity.playing || '不明'}</p>
+                </div>
+              </div>
+            `;
+          }
+          html += `</div>`;
+        } else {
+          html += `<h3>最近のアクティビティ（参加したゲーム）</h3><p>情報が取得できませんでした。</p>`;
+        }
+
+        resultDiv.innerHTML = html;
+
+        // フレンドクリックで再検索
+        const friendListDiv = document.querySelector('.friend-list');
+        if(friendListDiv){
+          friendListDiv.addEventListener('click', e => {
+            const target = e.target;
+            if(target.classList.contains('friend-item')){
+              const uname = target.getAttribute('data-username');
+              if(uname) {
+                searchProfile(uname);
+                window.scrollTo({top:0, behavior:'smooth'});
+              }
+            }
+          });
+        }
+
+      } catch(e){
+        resultDiv.innerHTML = `<p class="error">エラー: ${e.message}</p>`;
+      }
+    }
+
+    searchBtn.addEventListener('click', () => {
+      searchProfile(input.value.trim());
+    });
+
+    input.addEventListener('keydown', e => {
+      if(e.key === 'Enter'){
+        searchProfile(input.value.trim());
+      }
+    });
+  </script>
+</body>
+</html>
